@@ -1,0 +1,12 @@
+target/
+.beads/
+BRIEF.md
+.env
+.DS_Store
+.direnv/
+.worktrees/
+.claude/
+.agent-hooks/
+scripts/
+secretspec.toml
+.devenv/

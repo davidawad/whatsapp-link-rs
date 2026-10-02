@@ -1,0 +1,5 @@
+# Complexity thresholds for clippy's size and complexity lints. They only take
+# effect for lints that are enabled; see the [lints.clippy] table in Cargo.toml.
+too-many-lines-threshold = 100
+too-many-arguments-threshold = 7
+type-complexity-threshold = 250

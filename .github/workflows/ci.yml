@@ -26,7 +26,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
+      # Run the CLI over the whole history: gitleaks-action scans the
+      # pushed range from its parent, which fails on a repo's first push.
+      - name: gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks git --redact --verbose .
 
   fmt-check:
     name: Format check (cargo fmt)

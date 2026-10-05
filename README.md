@@ -13,6 +13,11 @@ reactions, link state, events and errors.
 > violate WhatsApp's terms of service and can get an account restricted or
 > banned. Use a number you can afford to lose, keep volume low, and never use this
 > for bulk or unsolicited messaging.
+>
+> **Unofficial.** Not affiliated with, endorsed by, or supported by WhatsApp or
+> Meta. Provided as is, without warranty (see `LICENSE`); you are responsible for
+> how you use it. "WhatsApp" is a trademark of its owner, used here only to name
+> the service this crate talks to.
 
 ## Install
 
@@ -21,8 +26,9 @@ reactions, link state, events and errors.
    * build it from source with Go: `git clone https://github.com/asternic/wuzapi && cd wuzapi && go build -o wuzapi .`
      and put the result on your `PATH` (or pass `--wuzapi-bin`).
    * Check it works: `wuzapi -help` should list `-mode` and `-datadir`.
-2. Install the crate: `cargo install --path .` (or add `whatsapp-link` as a
-   dependency of your own crate). Rust 1.89 or newer is required.
+2. Install the CLI: `cargo install --git https://github.com/davidawad/whatsapp-link-rs`
+   (or `cargo install --path .` from a clone), or add `whatsapp-link` as a
+   dependency of your own crate. Rust 1.89 or newer is required.
 
 ## Link an account
 
@@ -145,6 +151,16 @@ chat.
 in-process fake of wuzapi's JSON-RPC peer and a shell-script stand-in for the
 binary, using synthetic data only.
 
+## Security
+
+The data directory holds a live, linked WhatsApp session. See
+[SECURITY.md](SECURITY.md) for what is stored and how to report a vulnerability.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
-GPL-3.0-only. See `LICENSE`.
+GPL-3.0-only. See `LICENSE`. wuzapi (MIT) and whatsmeow (MPL-2.0) are not
+linked into this crate; it runs the `wuzapi` binary as a separate process.

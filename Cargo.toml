@@ -5,10 +5,14 @@ edition = "2021"
 rust-version = "1.89"
 description = "Link a WhatsApp account and read/send messages from Rust by driving wuzapi over stdio JSON-RPC"
 readme = "README.md"
+repository = "https://github.com/davidawad/whatsapp-link-rs"
+homepage = "https://github.com/davidawad/whatsapp-link-rs"
+documentation = "https://docs.rs/whatsapp-link"
+authors = ["David Awad"]
 keywords = ["whatsapp", "wuzapi", "json-rpc", "messaging"]
 categories = ["api-bindings", "command-line-utilities"]
 license = "GPL-3.0-only"
-exclude = ["BRIEF.md", ".beads/", "target/"]
+exclude = ["BRIEF.md", ".beads/", "target/", ".github/", "devenv.*", ".pre-commit-config.yaml", "renovate.json", "release-please-config.json", ".release-please-manifest.json"]
 
 [lib]
 name = "whatsapp_link"

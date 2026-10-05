@@ -10,3 +10,7 @@ BRIEF.md
 scripts/
 secretspec.toml
 .devenv/
+# wuzapi session data: never commit a linked session
+*.db
+*.db-shm
+*.db-wal

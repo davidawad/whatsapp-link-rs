@@ -1,0 +1,16 @@
+target/
+.beads/
+BRIEF.md
+.env
+.DS_Store
+.direnv/
+.worktrees/
+.claude/
+.agent-hooks/
+scripts/
+secretspec.toml
+.devenv/
+# wuzapi session data: never commit a linked session
+*.db
+*.db-shm
+*.db-wal

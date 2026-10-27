@@ -27,8 +27,13 @@ reactions, link state, events and errors.
      and put the result on your `PATH` (or pass `--wuzapi-bin`).
    * Check it works: `wuzapi -help` should list `-mode` and `-datadir`.
 2. Install the CLI: `cargo install --git https://github.com/davidawad/whatsapp-link-rs`
-   (or `cargo install --path .` from a clone), or add `whatsapp-link` as a
-   dependency of your own crate. Rust 1.89 or newer is required.
+   (or `cargo install --path .` from a clone). Rust 1.89 or newer is required.
+   To use it as a library, depend on it from git:
+
+   ```toml
+   [dependencies]
+   whatsapp-link = { git = "https://github.com/davidawad/whatsapp-link-rs", tag = "v0.1.0" }
+   ```
 
 ## Link an account
 

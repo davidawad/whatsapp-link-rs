@@ -64,6 +64,8 @@ enum Command {
     Link(LinkArgs),
     /// List chats
     Chats,
+    /// List the groups the account belongs to (metadata only, no messages)
+    Groups,
     /// Print a chat's recent messages as JSON
     History {
         /// Chat JID, for example 15550100@s.whatsapp.net
@@ -145,6 +147,10 @@ fn run(cli: Cli) -> Result<()> {
             // Names come from the online session; fall back to JIDs only.
             let _ = wa.connect();
             print(&wa.chats()?);
+        }
+        Command::Groups => {
+            wa.connect()?;
+            print(&wa.groups()?);
         }
         Command::History { jid, limit } => print(&wa.history(&jid, limit)?),
         Command::Send { to, text } => {

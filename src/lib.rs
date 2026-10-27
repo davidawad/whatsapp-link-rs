@@ -27,6 +27,7 @@ mod client;
 mod config;
 mod error;
 mod event;
+mod group;
 mod guard;
 mod model;
 mod qr;
@@ -34,8 +35,9 @@ mod rpc;
 
 pub use client::{LinkEvent, PairCode, QrStream, Wuzapi};
 pub use config::{derive_token, env, Config};
-pub use error::{Error, Result};
+pub use error::{Error, ProcessHolder, Result};
 pub use event::{Event, Events};
+pub use group::Group;
 pub use guard::DataDirGuard;
 pub use model::{
     Chat, History, Item, Jid, LinkState, MediaKind, Message, MessageId, Reaction, Recipient,

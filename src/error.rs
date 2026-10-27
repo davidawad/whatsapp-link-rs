@@ -21,7 +21,10 @@ pub enum Error {
         "data directory {dir} is already in use{}; never run two clients on one session",
         holders_suffix(.holders)
     )]
-    DataDirBusy { dir: PathBuf, holders: Vec<u32> },
+    DataDirBusy {
+        dir: PathBuf,
+        holders: Vec<ProcessHolder>,
+    },
     /// Local I/O failure (data directory, lock file, pipes).
     #[error("i/o error: {0}")]
     Io(#[from] std::io::Error),
@@ -56,11 +59,21 @@ pub enum Error {
     PairingFailed(String),
 }
 
-fn holders_suffix(holders: &[u32]) -> String {
+/// A process observed using the same wuzapi session directory.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct ProcessHolder {
+    pub pid: u32,
+    pub process: String,
+}
+
+fn holders_suffix(holders: &[ProcessHolder]) -> String {
     if holders.is_empty() {
         String::new()
     } else {
-        let pids: Vec<String> = holders.iter().map(u32::to_string).collect();
-        format!(" (pid {})", pids.join(", "))
+        let descriptions: Vec<String> = holders
+            .iter()
+            .map(|holder| format!("pid {}: {}", holder.pid, holder.process))
+            .collect();
+        format!(" ({})", descriptions.join("; "))
     }
 }

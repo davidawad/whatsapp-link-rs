@@ -84,6 +84,27 @@ fn send_text_returns_the_wire_message_id() {
 }
 
 #[test]
+fn caller_id_is_preserved_on_wire_for_repeated_sends() {
+    let (c, _w, log) = start(|id, method, params| {
+        assert_eq!(method, "chat.send.text");
+        assert_eq!(params["Id"], "MATABC123");
+        vec![ok(id, json!({"Id":"MATABC123","Timestamp":1_700_000_000}))]
+    });
+    let recipient: Recipient = "+1 555 0100".parse().unwrap();
+    for _ in 0..2 {
+        assert_eq!(
+            c.send_text_with_id(&recipient, "hello", "MATABC123")
+                .unwrap()
+                .id
+                .0,
+            "MATABC123"
+        );
+    }
+    assert_eq!(calls(&log, "chat.send.text").len(), 2);
+    assert!(c.send_text_with_id(&recipient, "hello", "").is_err());
+}
+
+#[test]
 fn send_text_to_a_jid_passes_it_through() {
     let (c, _w, log) = start(|id, _, _| vec![ok(id, json!({"Timestamp": 1, "Id": "X"}))]);
     c.send_text(&Recipient::Jid(chat()), "hi").unwrap();

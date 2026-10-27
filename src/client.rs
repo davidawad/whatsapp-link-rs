@@ -30,9 +30,9 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
 /// JSON-RPC over a reader/writer pair). Dropping it shuts the child down.
 pub struct Wuzapi {
     // Field order is drop order beyond `Drop::drop`: the guard is released last.
-    rpc: Rpc,
-    user_token: String,
-    timeout: Duration,
+    pub(crate) rpc: Rpc,
+    pub(crate) user_token: String,
+    pub(crate) timeout: Duration,
     child: Option<Child>,
     _guard: Option<DataDirGuard>,
 }
@@ -389,20 +389,44 @@ impl Wuzapi {
 
     /// Send a text message. The returned id is wuzapi's `Id` field.
     pub fn send_text(&self, to: &Recipient, body: &str) -> Result<SentMessage> {
+        self.send_text_request(to, body, None)
+    }
+    /// Reuse a caller-chosen native WhatsApp message id on retries.
+    /// Provider delivery semantics remain provider-owned, not exactly-once.
+    pub fn send_text_with_id(&self, to: &Recipient, body: &str, id: &str) -> Result<SentMessage> {
+        if id.is_empty() || id.len() > 128 || !id.bytes().all(|b| b.is_ascii_alphanumeric()) {
+            return Err(Error::InvalidInput("invalid native message id".into()));
+        }
+        self.send_text_request(to, body, Some(id))
+    }
+    fn send_text_request(
+        &self,
+        to: &Recipient,
+        body: &str,
+        id: Option<&str>,
+    ) -> Result<SentMessage> {
         if body.is_empty() {
             return Err(Error::InvalidInput("message body is empty".into()));
         }
         let method = "chat.send.text";
-        let result = self.call_as_user(method, json!({ "Phone": to.as_wire(), "Body": body }))?;
+        let mut request = json!({ "Phone": to.as_wire(), "Body": body });
+        if let Some(id) = id {
+            request["Id"] = json!(id);
+        }
+        let result = self.call_as_user(method, request)?;
         let protocol = |detail: &str| Error::Protocol {
             method: method.into(),
             detail: detail.into(),
         };
+        let expected_id = id;
         let id = result
             .get("Id")
             .and_then(Value::as_str)
             .filter(|s| !s.is_empty())
             .ok_or_else(|| protocol("missing Id"))?;
+        if expected_id.is_some_and(|expected| expected != id) {
+            return Err(protocol("gateway did not preserve caller message Id"));
+        }
         let ts = result
             .get("Timestamp")
             .and_then(Value::as_i64)

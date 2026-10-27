@@ -113,7 +113,10 @@ fn a_foreign_process_using_the_data_dir_blocks_startup() {
     let _ = foreign.kill();
     let _ = foreign.wait();
     match result {
-        Err(Error::DataDirBusy { holders, .. }) => assert!(holders.contains(&foreign.id())),
+        Err(Error::DataDirBusy { holders, .. }) => {
+            let holder = holders.iter().find(|h| h.pid == foreign.id()).unwrap();
+            assert_eq!(holder.process, "sh");
+        }
         other => panic!("expected DataDirBusy, got {other:?}"),
     }
     // Once the foreign process is gone the directory is free again.

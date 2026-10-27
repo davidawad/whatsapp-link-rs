@@ -11,7 +11,7 @@ use std::fs::{self, File, OpenOptions, TryLockError};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::error::{Error, Result};
+use crate::error::{Error, ProcessHolder, Result};
 
 const LOCK_FILE: &str = ".whatsapp-link.lock";
 
@@ -30,6 +30,7 @@ impl DataDirGuard {
         let canonical = dir.canonicalize()?;
 
         let mut holders = foreign_holders(&canonical, dir, std::process::id());
+        holders.sort_unstable_by_key(|holder| holder.pid);
         let lock = OpenOptions::new()
             .create(true)
             .truncate(false)
@@ -46,7 +47,6 @@ impl DataDirGuard {
             Err(TryLockError::Error(e)) => return Err(Error::Io(e)),
         }
         if !holders.is_empty() {
-            holders.sort_unstable();
             return Err(Error::DataDirBusy {
                 dir: canonical,
                 holders,
@@ -63,7 +63,7 @@ impl DataDirGuard {
     }
 }
 
-fn foreign_holders(canonical: &Path, given: &Path, own_pid: u32) -> Vec<u32> {
+fn foreign_holders(canonical: &Path, given: &Path, own_pid: u32) -> Vec<ProcessHolder> {
     let listing = Command::new("ps")
         .args(["-axo", "pid=,command="])
         .output()
@@ -81,7 +81,7 @@ fn foreign_holders(canonical: &Path, given: &Path, own_pid: u32) -> Vec<u32> {
 /// Pure core: PIDs in a `ps -axo pid=,command=` listing whose command line
 /// passes any of `dirs` as `-datadir`. Handles `-datadir=DIR`, `-datadir DIR`
 /// and `--datadir…`, and paths that contain spaces.
-pub(crate) fn find_holders(ps_listing: &str, dirs: &[String], own_pid: u32) -> Vec<u32> {
+pub(crate) fn find_holders(ps_listing: &str, dirs: &[String], own_pid: u32) -> Vec<ProcessHolder> {
     let dirs: Vec<&str> = dirs
         .iter()
         .map(|d| d.trim_end_matches('/'))
@@ -93,7 +93,15 @@ pub(crate) fn find_holders(ps_listing: &str, dirs: &[String], own_pid: u32) -> V
             let line = line.trim_start();
             let (pid, command) = line.split_once(char::is_whitespace)?;
             let pid: u32 = pid.parse().ok()?;
-            (pid != own_pid && dirs.iter().any(|d| mentions_datadir(command, d))).then_some(pid)
+            (pid != own_pid && dirs.iter().any(|d| mentions_datadir(command, d))).then(|| {
+                let executable = command.split_whitespace().next().unwrap_or(command);
+                let process = Path::new(executable)
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .unwrap_or(executable)
+                    .to_string();
+                ProcessHolder { pid, process }
+            })
         })
         .collect()
 }
@@ -126,21 +134,46 @@ mod tests {
   707 grep -datadir=/data/wa-nothing
 ";
 
-    fn holders(dir: &str, own: u32) -> Vec<u32> {
+    fn holders(dir: &str, own: u32) -> Vec<ProcessHolder> {
         find_holders(PS, &[dir.to_string()], own)
     }
 
     #[test]
     fn matches_exact_directories_only() {
-        assert_eq!(holders("/data/wa", 1), vec![202, 404, 505]);
-        assert_eq!(holders("/data/wa-other", 1), vec![303]);
-        assert_eq!(holders("/data/wa/", 1), vec![202, 404, 505]);
+        assert_eq!(
+            holders("/data/wa", 1)
+                .iter()
+                .map(|h| h.pid)
+                .collect::<Vec<_>>(),
+            vec![202, 404, 505]
+        );
+        assert_eq!(holders("/data/wa", 1)[0].process, "wuzapi");
+        assert_eq!(
+            holders("/data/wa-other", 1)
+                .iter()
+                .map(|h| h.pid)
+                .collect::<Vec<_>>(),
+            vec![303]
+        );
+        assert_eq!(
+            holders("/data/wa/", 1)
+                .iter()
+                .map(|h| h.pid)
+                .collect::<Vec<_>>(),
+            vec![202, 404, 505]
+        );
     }
 
     #[test]
     fn handles_spaces_and_ignores_own_pid() {
-        assert_eq!(holders("/data/with space", 1), vec![606]);
-        assert_eq!(holders("/data/wa", 202), vec![404, 505]);
+        assert_eq!(holders("/data/with space", 1)[0].pid, 606);
+        assert_eq!(
+            holders("/data/wa", 202)
+                .iter()
+                .map(|h| h.pid)
+                .collect::<Vec<_>>(),
+            vec![404, 505]
+        );
         assert!(holders("/nowhere", 1).is_empty());
     }
 
